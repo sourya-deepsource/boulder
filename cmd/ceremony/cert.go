@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -120,6 +121,26 @@ func (profile *certProfile) verifyProfile(ct certType) error {
 		}
 		if profile.OCSPURL != "" {
 			return errors.New("ocsp-url cannot be set for a delegated signer")
+		}
+	}
+
+	if err := profile.validateURLs(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (profile *certProfile) validateURLs() error {
+	for _, u := range []string{profile.IssuerURL, profile.CRLURL, profile.OCSPURL} {
+		if u == "" {
+			continue
+		}
+		parsed, err := url.Parse(u)
+		if err != nil {
+			return err
+		}
+		if parsed.Scheme != "http" {
+			return fmt.Errorf("non-HTTP URL: %s", u)
 		}
 	}
 	return nil

@@ -85,9 +85,9 @@ func TestMakeTemplate(t *testing.T) {
 	profile.CommonName = "common name"
 	profile.Organization = "organization"
 	profile.Country = "country"
-	profile.OCSPURL = "ocsp"
-	profile.CRLURL = "crl"
-	profile.IssuerURL = "issuer"
+	profile.OCSPURL = "http://ocsp.example.com"
+	profile.CRLURL = "http://crl.example.com"
+	profile.IssuerURL = "http://issuer.example.com"
 	cert, err := makeTemplate(randReader, profile, pubKey, rootCert)
 	test.AssertNotError(t, err, "makeTemplate failed when everything worked as expected")
 	test.AssertEquals(t, cert.Subject.CommonName, profile.CommonName)
@@ -123,9 +123,9 @@ func TestMakeTemplateCrossCertificate(t *testing.T) {
 		Organization:       "organization",
 		Country:            "country",
 		KeyUsages:          []string{"Digital Signature", "CRL Sign"},
-		OCSPURL:            "ocsp",
-		CRLURL:             "crl",
-		IssuerURL:          "issuer",
+		OCSPURL:            "http://ocsp.example.com",
+		CRLURL:             "http://crl.example.com",
+		IssuerURL:          "http://issuer.example.com",
 		NotAfter:           "2018-05-18 11:31:00",
 		NotBefore:          "2018-05-18 11:31:00",
 	}
@@ -147,9 +147,9 @@ func TestMakeTemplateOCSP(t *testing.T) {
 		CommonName:         "common name",
 		Organization:       "organization",
 		Country:            "country",
-		OCSPURL:            "ocsp",
-		CRLURL:             "crl",
-		IssuerURL:          "issuer",
+		OCSPURL:            "http://ocsp.example.com",
+		CRLURL:             "http://crl.example.com",
+		IssuerURL:          "http://issuer.example.com",
 		NotAfter:           "2018-05-18 11:31:00",
 		NotBefore:          "2018-05-18 11:31:00",
 	}
@@ -190,9 +190,9 @@ func TestMakeTemplateCRL(t *testing.T) {
 		CommonName:         "common name",
 		Organization:       "organization",
 		Country:            "country",
-		OCSPURL:            "ocsp",
-		CRLURL:             "crl",
-		IssuerURL:          "issuer",
+		OCSPURL:            "http://ocsp.example.com",
+		CRLURL:             "http://crl.example.com",
+		IssuerURL:          "http://issuer.example.com",
 		NotAfter:           "2018-05-18 11:31:00",
 		NotBefore:          "2018-05-18 11:31:00",
 	}
@@ -269,7 +269,7 @@ func TestVerifyProfile(t *testing.T) {
 				CommonName:         "d",
 				Organization:       "e",
 				Country:            "f",
-				OCSPURL:            "g",
+				OCSPURL:            "http://ocsp.example.com",
 			},
 			certType:    intermediateCert,
 			expectedErr: "crl-url is required for intermediates",
@@ -282,8 +282,8 @@ func TestVerifyProfile(t *testing.T) {
 				CommonName:         "d",
 				Organization:       "e",
 				Country:            "f",
-				OCSPURL:            "g",
-				CRLURL:             "h",
+				OCSPURL:            "http://ocsp.example.com",
+				CRLURL:             "http://crl.example.com",
 			},
 			certType:    intermediateCert,
 			expectedErr: "issuer-url is required for intermediates",
@@ -307,7 +307,7 @@ func TestVerifyProfile(t *testing.T) {
 				CommonName:         "d",
 				Organization:       "e",
 				Country:            "f",
-				IssuerURL:          "g",
+				IssuerURL:          "http://issuer.example.com",
 				KeyUsages:          []string{"j"},
 			},
 			certType:    ocspCert,
@@ -321,8 +321,8 @@ func TestVerifyProfile(t *testing.T) {
 				CommonName:         "d",
 				Organization:       "e",
 				Country:            "f",
-				IssuerURL:          "g",
-				CRLURL:             "i",
+				IssuerURL:          "http://issuer.example.com",
+				CRLURL:             "http://crl.example.com",
 			},
 			certType:    ocspCert,
 			expectedErr: "crl-url cannot be set for a delegated signer",
@@ -335,8 +335,8 @@ func TestVerifyProfile(t *testing.T) {
 				CommonName:         "d",
 				Organization:       "e",
 				Country:            "f",
-				IssuerURL:          "g",
-				OCSPURL:            "h",
+				IssuerURL:          "http://issuer.example.com",
+				OCSPURL:            "http://ocsp.example.com",
 			},
 			certType:    ocspCert,
 			expectedErr: "ocsp-url cannot be set for a delegated signer",
@@ -349,7 +349,7 @@ func TestVerifyProfile(t *testing.T) {
 				CommonName:         "d",
 				Organization:       "e",
 				Country:            "f",
-				IssuerURL:          "g",
+				IssuerURL:          "http://issuer.example.com",
 			},
 			certType: ocspCert,
 		},
@@ -361,7 +361,7 @@ func TestVerifyProfile(t *testing.T) {
 				CommonName:         "d",
 				Organization:       "e",
 				Country:            "f",
-				IssuerURL:          "g",
+				IssuerURL:          "http://issuer.example.com",
 				KeyUsages:          []string{"j"},
 			},
 			certType:    crlCert,
@@ -375,8 +375,8 @@ func TestVerifyProfile(t *testing.T) {
 				CommonName:         "d",
 				Organization:       "e",
 				Country:            "f",
-				IssuerURL:          "g",
-				CRLURL:             "i",
+				IssuerURL:          "http://issuer.example.com",
+				CRLURL:             "http://crl.example.com",
 			},
 			certType:    crlCert,
 			expectedErr: "crl-url cannot be set for a delegated signer",
@@ -389,8 +389,8 @@ func TestVerifyProfile(t *testing.T) {
 				CommonName:         "d",
 				Organization:       "e",
 				Country:            "f",
-				IssuerURL:          "g",
-				OCSPURL:            "h",
+				IssuerURL:          "http://issuer.example.com",
+				OCSPURL:            "http://ocsp.example.com",
 			},
 			certType:    crlCert,
 			expectedErr: "ocsp-url cannot be set for a delegated signer",
@@ -403,7 +403,7 @@ func TestVerifyProfile(t *testing.T) {
 				CommonName:         "d",
 				Organization:       "e",
 				Country:            "f",
-				IssuerURL:          "g",
+				IssuerURL:          "http://issuer.example.com",
 			},
 			certType: crlCert,
 		},
@@ -416,5 +416,25 @@ func TestVerifyProfile(t *testing.T) {
 		} else if tc.expectedErr != "" {
 			t.Fatalf("verifyProfile didn't fail, expected %q", tc.expectedErr)
 		}
+	}
+}
+
+func TestValidateURLsSuccess(t *testing.T) {
+	profile := &certProfile{CRLURL: "http://example.com/"}
+	err := profile.validateURLs()
+	test.AssertNotError(t, err, "error validating valid URL")
+}
+
+func TestValidateURLsNoParse(t *testing.T) {
+	profile := &certProfile{OCSPURL: "://"}
+	if err := profile.validateURLs(); err == nil {
+		t.Error("expected error, got none")
+	}
+}
+
+func TestValidateURLsBadScheme(t *testing.T) {
+	profile := &certProfile{IssuerURL: "https://issuer.example.com"}
+	if err := profile.validateURLs(); err == nil {
+		t.Error("expected error, got none")
 	}
 }
