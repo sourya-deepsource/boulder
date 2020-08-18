@@ -12,8 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/letsencrypt/boulder/policyasn1"
 )
 
 type policyInfoConfig struct {
@@ -56,7 +54,7 @@ type certProfile struct {
 
 	// PolicyOIDs should contain any OIDs to be inserted in a certificate
 	// policies extension. If the CPSURI field of a policyInfoConfig element
-	// is set it will result in a PolicyInformation structure containing a
+	// is set it will result in a policyInformation structure containing a
 	// single id-qt-cps type qualifier indicating the CPS URI.
 	Policies []policyInfoConfig `yaml:"policies"`
 
@@ -144,23 +142,34 @@ var stringToKeyUsage = map[string]x509.KeyUsage{
 	"Cert Sign":         x509.KeyUsageCertSign,
 }
 
+type policyQualifier struct {
+	Id    asn1.ObjectIdentifier
+	Value string `asn1:"tag:optional,ia5"`
+}
+
+type policyInformation struct {
+	Policy     asn1.ObjectIdentifier
+	Qualifiers []policyQualifier `asn1:"tag:optional,omitempty"`
+}
+
 var (
 	oidExtensionCertificatePolicies = asn1.ObjectIdentifier{2, 5, 29, 32}
+	oidCPSQualifier                 = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 2, 1}
 
 	oidOCSPNoCheck = asn1.ObjectIdentifier{1, 3, 6, 1, 5, 5, 7, 48, 1, 5}
 )
 
 func buildPolicies(policies []policyInfoConfig) (pkix.Extension, error) {
 	policyExt := pkix.Extension{Id: oidExtensionCertificatePolicies}
-	var policyInfo []policyasn1.PolicyInformation
+	var policyInfo []policyInformation
 	for _, p := range policies {
 		oid, err := parseOID(p.OID)
 		if err != nil {
 			return pkix.Extension{}, err
 		}
-		pi := policyasn1.PolicyInformation{Policy: oid}
+		pi := policyInformation{Policy: oid}
 		if p.CPSURI != "" {
-			pi.Qualifiers = []policyasn1.PolicyQualifier{{OID: policyasn1.CPSQualifierOID, Value: p.CPSURI}}
+			pi.Qualifiers = []policyQualifier{{Id: oidCPSQualifier, Value: p.CPSURI}}
 		}
 		policyInfo = append(policyInfo, pi)
 	}
