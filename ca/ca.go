@@ -111,15 +111,11 @@ const (
 
 // Three maps of keys to internalIssuers. Lookup by PublicKeyAlgorithm is
 // useful for determining which issuer to use to sign a given (pre)cert, based
-// on its PublicKeyAlgorithm. Lookup by CommonName is useful for determining
-// which issuer to use to sign an OCSP response, based on the cert's
-// Issuer CN. Lookup by ID is useful for the same functionality, in cases
-// where features.StoreIssuerInfo is true and the OCSP request is identified
-// by Serial and IssuerID rather than by the full cert.
+// on its PublicKeyAlgorithm. Lookup by ID is useful for determining which
+// issuer to use when generating OCSP.
 type issuerMaps struct {
-	byAlg  map[x509.PublicKeyAlgorithm]*internalIssuer
-	byName map[string]*internalIssuer
-	byID   map[issuance.IssuerID]*internalIssuer
+	byAlg map[x509.PublicKeyAlgorithm]*internalIssuer
+	byID  map[issuance.IssuerID]*internalIssuer
 }
 
 // CertificateAuthorityImpl represents a CA that signs certificates, CRLs, and
@@ -173,7 +169,6 @@ type internalIssuer struct {
 
 func makeInternalIssuers(issuers []*issuance.Issuer, lifespanOCSP time.Duration) (issuerMaps, error) {
 	issuersByAlg := make(map[x509.PublicKeyAlgorithm]*internalIssuer, 2)
-	issuersByName := make(map[string]*internalIssuer, len(issuers))
 	issuersByID := make(map[issuance.IssuerID]*internalIssuer, len(issuers))
 	for _, issuer := range issuers {
 		ii := &internalIssuer{
@@ -187,13 +182,9 @@ func makeInternalIssuers(issuers []*issuance.Issuer, lifespanOCSP time.Duration)
 			}
 			issuersByAlg[alg] = ii
 		}
-		if issuersByName[issuer.Name()] != nil {
-			return issuerMaps{}, errors.New("Multiple issuer certs with the same CommonName are not supported")
-		}
-		issuersByName[issuer.Name()] = ii
 		issuersByID[issuer.ID()] = ii
 	}
-	return issuerMaps{issuersByAlg, issuersByName, issuersByID}, nil
+	return issuerMaps{issuersByAlg, issuersByID}, nil
 }
 
 func makeCFSSLInternalIssuers(issuers []Issuer, policy *cfsslConfig.Signing, lifespanOCSP time.Duration) (issuerMaps, error) {
@@ -201,7 +192,6 @@ func makeCFSSLInternalIssuers(issuers []Issuer, policy *cfsslConfig.Signing, lif
 		return issuerMaps{}, errors.New("No issuers specified.")
 	}
 	issuersByAlg := make(map[x509.PublicKeyAlgorithm]*internalIssuer, len(issuers))
-	issuersByName := make(map[string]*internalIssuer, len(issuers))
 	issuersByID := make(map[issuance.IssuerID]*internalIssuer, len(issuers))
 	for idx, iss := range issuers {
 		if iss.Cert == nil || iss.Signer == nil {
@@ -210,10 +200,6 @@ func makeCFSSLInternalIssuers(issuers []Issuer, policy *cfsslConfig.Signing, lif
 		cfsslSigner, err := local.NewSigner(iss.Signer, iss.Cert.Certificate, x509.SHA256WithRSA, policy)
 		if err != nil {
 			return issuerMaps{}, err
-		}
-		cn := iss.Cert.Subject.CommonName
-		if issuersByName[cn] != nil {
-			return issuerMaps{}, errors.New("Multiple issuer certs with the same CommonName are not supported")
 		}
 
 		ii := &internalIssuer{
@@ -233,10 +219,9 @@ func makeCFSSLInternalIssuers(issuers []Issuer, policy *cfsslConfig.Signing, lif
 			issuersByAlg[x509.RSA] = ii
 			issuersByAlg[x509.ECDSA] = ii
 		}
-		issuersByName[cn] = ii
 		issuersByID[iss.Cert.ID()] = ii
 	}
-	return issuerMaps{issuersByAlg, issuersByName, issuersByID}, nil
+	return issuerMaps{issuersByAlg, issuersByID}, nil
 }
 
 // NewCertificateAuthorityImpl creates a CA instance that can sign certificates
