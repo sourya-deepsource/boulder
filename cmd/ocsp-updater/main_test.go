@@ -18,7 +18,6 @@ import (
 	"github.com/letsencrypt/boulder/cmd"
 	"github.com/letsencrypt/boulder/core"
 	"github.com/letsencrypt/boulder/db"
-	"github.com/letsencrypt/boulder/features"
 	blog "github.com/letsencrypt/boulder/log"
 	"github.com/letsencrypt/boulder/metrics"
 	"github.com/letsencrypt/boulder/sa"
@@ -432,7 +431,6 @@ func TestIssuerInfo(t *testing.T) {
 	m := mockOCSPRecordIssuer{}
 	updater.ogc = &m
 	reg := satest.CreateWorkingRegistration(t, sa)
-	_ = features.Set(map[string]bool{"StoreIssuerInfo": true})
 
 	k, err := rsa.GenerateKey(rand.Reader, 512)
 	test.AssertNotError(t, err, "rsa.GenerateKey failed")

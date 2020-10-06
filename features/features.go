@@ -20,6 +20,7 @@ const (
 	DeleteUnusedChallenges
 	BlockedKeyTable
 	StoreKeyHashes
+	StoreIssuerInfo
 
 	//   Currently in-use features
 	// Check CAA and respect validationmethods parameter.
@@ -46,9 +47,6 @@ const (
 	// StripDefaultSchemePort enables stripping of default scheme ports from HTTP
 	// request Host headers
 	StripDefaultSchemePort
-	// StoreIssuerInfo enables storage of information identifying the issuer of
-	// a certificate in the certificateStatus table.
-	StoreIssuerInfo
 	// StoreRevokerInfo enables storage of the revoker and a bool indicating if the row
 	// was checked for extant unrevoked certificates in the blockedKeys table.
 	StoreRevokerInfo

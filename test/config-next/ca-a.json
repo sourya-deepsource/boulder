@@ -137,9 +137,7 @@
       }
     },
     "orphanQueueDir": "/tmp/orphaned-certificates-a",
-    "features": {
-      "StoreIssuerInfo": true
-    }
+    "features": {}
   },
 
   "pa": {
