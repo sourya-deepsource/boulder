@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -22,7 +21,6 @@ import (
 	"github.com/letsencrypt/boulder/core"
 	corepb "github.com/letsencrypt/boulder/core/proto"
 	berrors "github.com/letsencrypt/boulder/errors"
-	"github.com/letsencrypt/boulder/features"
 	"github.com/letsencrypt/boulder/goodkey"
 	bgrpc "github.com/letsencrypt/boulder/grpc"
 	"github.com/letsencrypt/boulder/identifier"
@@ -631,99 +629,10 @@ func link(url, relation string) string {
 
 // NewRegistration is used by clients to submit a new registration/account
 func (wfe *WebFrontEndImpl) NewRegistration(ctx context.Context, logEvent *web.RequestEvent, response http.ResponseWriter, request *http.Request) {
-	body, key, _, prob := wfe.verifyPOST(ctx, logEvent, request, false, core.ResourceNewReg)
-	addRequesterHeader(response, logEvent.Requester)
-	if prob != nil {
-		// verifyPOST handles its own setting of logEvent.Errors
-		wfe.sendError(response, logEvent, prob, nil)
-		return
-	}
-
-	existingReg, err := wfe.SA.GetRegistrationByKey(ctx, key)
-	if err != nil && !errors.Is(err, berrors.NotFound) {
-		wfe.sendError(response, logEvent, probs.ServerInternal("couldn't retrieve the registration"), err)
-		return
-	} else if err == nil || !errors.Is(err, berrors.NotFound) {
-		response.Header().Set("Location", web.RelativeEndpoint(request, fmt.Sprintf("%s%d", regPath, existingReg.ID)))
-		wfe.sendError(response, logEvent, probs.Conflict("Registration key is already in use"), err)
-		return
-	}
-
-	if !features.Enabled(features.AllowV1Registration) {
-		wfe.sendError(response, logEvent, probs.Unauthorized("Account creation on ACMEv1 is disabled. "+
-			"Please upgrade your ACME client to a version that supports ACMEv2 / RFC 8555. "+
-			"See https://community.letsencrypt.org/t/end-of-life-plan-for-acmev1/88430 for details."), nil)
-		return
-	}
-
-	var init core.Registration
-	err = json.Unmarshal(body, &init)
-	if err != nil {
-		wfe.sendError(response, logEvent, probs.Malformed("Error unmarshaling JSON"), err)
-		return
-	}
-	if len(init.Agreement) > 0 && init.Agreement != wfe.SubscriberAgreementURL {
-		msg := fmt.Sprintf("Provided agreement URL [%s] does not match current agreement URL [%s]", init.Agreement, wfe.SubscriberAgreementURL)
-		wfe.sendError(response, logEvent, probs.Malformed(msg), nil)
-		return
-	}
-	init.Key = key
-	init.InitialIP = net.ParseIP(request.Header.Get("X-Real-IP"))
-	if init.InitialIP == nil {
-		host, _, err := net.SplitHostPort(request.RemoteAddr)
-		if err == nil {
-			init.InitialIP = net.ParseIP(host)
-		} else {
-			wfe.sendError(
-				response,
-				logEvent,
-				probs.ServerInternal("couldn't parse the remote (that is, the client's) address"),
-				fmt.Errorf("Couldn't parse RemoteAddr: %s", request.RemoteAddr),
-			)
-			return
-		}
-	}
-
-	reg, err := wfe.RA.NewRegistration(ctx, init)
-	if err != nil {
-		if errors.Is(err, berrors.Duplicate) {
-			existingReg, err := wfe.SA.GetRegistrationByKey(ctx, key)
-			if err != nil {
-				// return error even if berrors.NotFound, as the duplicate key error we got from
-				// ra.NewRegistration indicates it _does_ already exist.
-				wfe.sendError(response, logEvent, probs.ServerInternal("couldn't retrieve the registration"), err)
-				return
-			}
-			response.Header().Set("Location", web.RelativeEndpoint(request, fmt.Sprintf("%s%d", regPath, existingReg.ID)))
-			wfe.sendError(response, logEvent, probs.Conflict("Registration key is already in use"), err)
-			return
-		}
-		wfe.sendError(response, logEvent, web.ProblemDetailsForError(err, "Error creating new registration"), err)
-		return
-	}
-	logEvent.Requester = reg.ID
-	addRequesterHeader(response, reg.ID)
-	if reg.Contact != nil {
-		logEvent.Contacts = *reg.Contact
-	}
-
-	// Use an explicitly typed variable. Otherwise `go vet' incorrectly complains
-	// that reg.ID is a string being passed to %d.
-	regURL := web.RelativeEndpoint(request, fmt.Sprintf("%s%d", regPath, reg.ID))
-
-	response.Header().Add("Location", regURL)
-	response.Header().Add("Link", link(web.RelativeEndpoint(request, newAuthzPath), "next"))
-	if len(wfe.SubscriberAgreementURL) > 0 {
-		response.Header().Add("Link", link(wfe.SubscriberAgreementURL, "terms-of-service"))
-	}
-
-	err = wfe.writeJsonResponse(response, logEvent, http.StatusCreated, reg)
-	if err != nil {
-		// ServerInternal because we just created this registration, and it
-		// should be OK.
-		wfe.sendError(response, logEvent, probs.ServerInternal("Error marshaling registration"), err)
-		return
-	}
+	wfe.sendError(response, logEvent, probs.Unauthorized("Account creation on ACMEv1 is disabled. "+
+		"Please upgrade your ACME client to a version that supports ACMEv2 / RFC 8555. "+
+		"See https://community.letsencrypt.org/t/end-of-life-plan-for-acmev1/88430 for details."), nil)
+	return
 }
 
 // NewAuthorization is used by clients to submit a new ID Authorization

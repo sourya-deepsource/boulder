@@ -596,17 +596,15 @@ func (ra *RegistrationAuthorityImpl) NewAuthorization(ctx context.Context, reque
 		return bgrpc.PBToAuthz(pendingPB)
 	}
 
-	if features.Enabled(features.V1DisableNewValidations) {
-		exists, err := ra.SA.PreviousCertificateExists(ctx, &sapb.PreviousCertificateExistsRequest{
-			Domain: identifier.Value,
-			RegID:  regID,
-		})
-		if err != nil {
-			return core.Authorization{}, err
-		}
-		if !exists.Exists {
-			return core.Authorization{}, berrors.UnauthorizedError("Validations for new domains are disabled in the V1 API (https://community.letsencrypt.org/t/end-of-life-plan-for-acmev1/88430)")
-		}
+	prevCert, err := ra.SA.PreviousCertificateExists(ctx, &sapb.PreviousCertificateExistsRequest{
+		Domain: identifier.Value,
+		RegID:  regID,
+	})
+	if err != nil {
+		return core.Authorization{}, err
+	}
+	if !prevCert.Exists {
+		return core.Authorization{}, berrors.UnauthorizedError("Validations for new domains are disabled in the V1 API (https://community.letsencrypt.org/t/end-of-life-plan-for-acmev1/88430)")
 	}
 
 	authzPB, err := ra.createPendingAuthz(ctx, regID, identifier)

@@ -20,6 +20,8 @@ const (
 	DeleteUnusedChallenges
 	BlockedKeyTable
 	StoreKeyHashes
+	AllowV1Registration
+	V1DisableNewValidations
 
 	//   Currently in-use features
 	// Check CAA and respect validationmethods parameter.
@@ -35,11 +37,6 @@ const (
 	// MandatoryPOSTAsGET forbids legacy unauthenticated GET requests for ACME
 	// resources.
 	MandatoryPOSTAsGET
-	// Allow creation of new registrations in ACMEv1.
-	AllowV1Registration
-	// V1DisableNewValidations disables validations for new domain names in the V1
-	// API.
-	V1DisableNewValidations
 	// PrecertificateRevocation allows revocation of precertificates with the
 	// ACMEv2 interface.
 	PrecertificateRevocation
@@ -74,10 +71,8 @@ var features = map[FeatureFlag]bool{
 	RemoveWFE2AccountID:           false,
 	CheckRenewalFirst:             false,
 	MandatoryPOSTAsGET:            false,
-	AllowV1Registration:           true,
 	ParallelCheckFailedValidation: false,
 	DeleteUnusedChallenges:        false,
-	V1DisableNewValidations:       false,
 	PrecertificateRevocation:      false,
 	StripDefaultSchemePort:        false,
 	StoreIssuerInfo:               false,
