@@ -437,25 +437,6 @@ func TestNewIssuerUnsupportedKeyType(t *testing.T) {
 	test.AssertEquals(t, err.Error(), "unsupported issuer key type")
 }
 
-func TestNewIssuerNoCertSign(t *testing.T) {
-	_, err := NewIssuer(
-		&Certificate{
-			&x509.Certificate{
-				PublicKey: &ecdsa.PublicKey{
-					Curve: elliptic.P256(),
-				},
-				KeyUsage: 0,
-			},
-		},
-		issuerSigner,
-		defaultProfile(),
-		&lint.Linter{},
-		clock.NewFake(),
-	)
-	test.AssertError(t, err, "NewIssuer didn't fail")
-	test.AssertEquals(t, err.Error(), "end-entity signing cert does not have keyUsage certSign")
-}
-
 func TestNewIssuerNoDigitalSignature(t *testing.T) {
 	_, err := NewIssuer(
 		&Certificate{
