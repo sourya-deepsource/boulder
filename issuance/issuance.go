@@ -411,11 +411,6 @@ func NewIssuer(cert *Certificate, signer crypto.Signer, profile *Profile, linter
 		return nil, errors.New("unsupported issuer key type")
 	}
 
-	// TODO(#5086): Only do this check for ocsp-issuing issuers.
-	if cert.KeyUsage&x509.KeyUsageDigitalSignature == 0 {
-		return nil, errors.New("end-entity ocsp signing cert does not have keyUsage digitalSignature")
-	}
-
 	i := &Issuer{
 		Cert:    cert,
 		Signer:  signer,
