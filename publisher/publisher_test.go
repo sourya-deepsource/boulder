@@ -201,7 +201,7 @@ func errorBodyLogSrv() *httptest.Server {
 func setup(t *testing.T) (*Impl, *x509.Certificate, *ecdsa.PrivateKey) {
 	intermediatePEM, _ := pem.Decode([]byte(testIntermediate))
 
-	pub := New(nil,
+	pub := New(nil, nil,
 		"test-user-agent/1.0",
 		log,
 		metrics.NoopRegisterer)

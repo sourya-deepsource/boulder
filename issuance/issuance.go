@@ -13,6 +13,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -625,4 +626,49 @@ func RequestFromPrecert(precert *x509.Certificate, scts []ct.SignedCertificateTi
 		IncludeMustStaple: ContainsMustStaple(precert.Extensions),
 		SCTList:           scts,
 	}, nil
+}
+
+// LoadChain takes a list of filenames containing pem-formatted certificates,
+// and returns a chain representing all of those certificates in order. It
+// ensures that the resulting chain is valid. The final file is expected to be
+// a root certificate, which the chain will be verified against, but which will
+// not be included in the resulting chain.
+func LoadChain(certFiles []string) (*Certificate, []byte, []ct.ASN1Cert, error) {
+	if len(certFiles) < 2 {
+		return nil, nil, nil, errors.New(
+			"each chain must have at least two certificates: an intermediate and a root")
+	}
+
+	// Pre-load all the certificates to make validation easier.
+	certs := make([]*x509.Certificate, len(certFiles))
+	var err error
+	for i := 0; i < len(certFiles); i++ {
+		certs[i], err = core.LoadCert(certFiles[i])
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to load certificate: %w", err)
+		}
+	}
+
+	// Iterate over all certs except for the last, checking that their signature
+	// comes from the next cert in the list, and appending their pem to the buf.
+	var buf bytes.Buffer
+	var ctBundle []ct.ASN1Cert
+	for i := 0; i < len(certs)-1; i++ {
+		err = certs[i].CheckSignatureFrom(certs[i+1])
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to verify chain: %w", err)
+		}
+
+		buf.Write([]byte("\n"))
+		buf.Write(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certs[i].Raw}))
+		ctBundle = append(ctBundle, ct.ASN1Cert{Data: certs[i].Raw})
+	}
+
+	err = certs[len(certs)-1].CheckSignatureFrom(certs[len(certs)-1])
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf(
+			"final cert in chain must be a self-signed (used only for validation): %w", err)
+	}
+
+	return &Certificate{Certificate: certs[0]}, buf.Bytes(), ctBundle, nil
 }
