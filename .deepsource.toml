@@ -1,6 +1,6 @@
 version = 1
 
-exclude_patterns = ["**/*.pb.go"]
+exclude_patterns = ["**/*.pb.go", "vendor/**"]
 
 [[analyzers]]
 name = "go"
